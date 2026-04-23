@@ -1,12 +1,12 @@
 ---
-title: "Today's Top Hits"
+title: "Spotify Top 50 — Global (Daily)"
 format: 
   dashboard: 
     logo: "images/logo.png"
     orientation: columns
 ---
 
-## Column {width="35%"}
+## Column {width="55%"}
 
 ```{r, loadpackages}
 #| echo: false
@@ -14,6 +14,7 @@ format:
 library(tidyverse)
 library(httr2)
 library(gt)
+library(rvest)
 ```
 
 ```{r, createaccesstoken}
@@ -40,39 +41,53 @@ spotify_access_token <- req_access_token$access_token
 ```{r, gettthplaylist}
 #| echo: false
 #| include: false
-# Get Today's Top Hits Playlist information
-tth <- request("https://api.spotify.com/v1/playlists/37i9dQZF1DXcBWIGoYBM5M") |> 
-  req_method("GET") |> 
-  req_headers(
-    Authorization = paste0("Bearer ", spotify_access_token),
-  ) |> 
+# Scrape kworb.net for the Spotify Global Daily chart.
+# NOTE: We used to fetch the editorial playlist "Today's Top Hits" 
+# (37i9dQZF1DXcBWIGoYBM5M) plus /audio-analysis for each track, but both
+# endpoints were restricted by Spotify's Nov 2024 Web API changes for 
+# third-party apps. kworb aggregates Spotify's own chart daily and provides 
+# the underlying track IDs, so we can still enrich each row via the 
+# /v1/tracks endpoint (which remains available).
+kworb_url <- "https://kworb.net/spotify/country/global_daily.html"
+kworb_page <- read_html(kworb_url)
+kworb_rows <- kworb_page |> html_element("table") |> html_elements("tr")
+kworb_rows <- kworb_rows[-1]  # drop header
+
+parse_kworb_row <- function(row) {
+  tds <- html_elements(row, "td")
+  title_cell <- tds[[3]]
+  links <- html_elements(title_cell, "a")
+  hrefs <- html_attr(links, "href")
+  track_href <- hrefs[grepl("/track/", hrefs)][1]
+  artist_href <- hrefs[grepl("/artist/", hrefs)][1]
+  tibble(
+    position    = as.integer(html_text(tds[[1]])),
+    pos_change  = html_text(tds[[2]]),
+    artist_name = html_text(links[grepl("/artist/", hrefs)][1]),
+    song_name   = html_text(links[grepl("/track/", hrefs)][1]),
+    song_id     = sub("^.*/track/([^./]+)\\.html$", "\\1", track_href),
+    artist_id   = sub("^.*/artist/([^./]+)\\.html$", "\\1", artist_href),
+    streams_today = html_text(tds[[7]])
+  )
+}
+
+top_hits_df <- bind_rows(lapply(head(kworb_rows, 50), parse_kworb_row))
+
+# Batch enrich with Spotify track metadata (up to 50 IDs per call).
+tracks_resp <- request("https://api.spotify.com/v1/tracks") |> 
+  req_url_query(ids = paste(top_hits_df$song_id, collapse = ",")) |> 
+  req_headers(Authorization = paste0("Bearer ", spotify_access_token)) |> 
   req_perform() |> 
   resp_body_json()
 
-# Create data frame with the top hits information
-top_hits_df <- data.frame(
-  song_name = unlist(lapply(tth$tracks$items, FUN = function(x) { x$track$name })),
-  song_id = unlist(lapply(tth$tracks$items, FUN = function(x) { x$track$id })),
-  artist_name = unlist(lapply(tth$tracks$items, FUN = function(x) {x$track$album$artists[[1]]$name})),
-  album_art = unlist(lapply(tth$tracks$items, FUN = function(x) {x$track$album$images[[1]]$url})),
-  track_duration = unlist(lapply(tth$tracks$items, FUN = function(x) {x$track$duration_ms})), 
-  popularity = unlist(lapply(tth$tracks$items, FUN = function(x) {x$track$popularity}))
+enriched <- tibble(
+  song_id        = vapply(tracks_resp$tracks, function(x) x$id %||% NA_character_, character(1)),
+  album_art      = vapply(tracks_resp$tracks, function(x) x$album$images[[1]]$url %||% NA_character_, character(1)),
+  track_duration = vapply(tracks_resp$tracks, function(x) x$duration_ms %||% NA_integer_, integer(1)),
+  popularity     = vapply(tracks_resp$tracks, function(x) x$popularity %||% NA_integer_, integer(1))
 )
 
-tempo_list <- vector(mode = "list", length = 50)
-for (i in 1:50) {
-  audio_analysis <- request(paste0("https://api.spotify.com/v1/audio-analysis/", top_hits_df$song_id[i])) |> 
-  req_method("GET") |> 
-  req_headers(
-    Authorization = paste0("Bearer ", spotify_access_token),
-  ) |> 
-  req_perform() |> 
-  resp_body_json()
-  
-  # Get tempo for each section of the song
-  tempo_list[[i]] <- unlist(lapply(audio_analysis$sections, FUN = function(x) {x$tempo }))
-}
-top_hits_df$tempo <- I(tempo_list)
+top_hits_df <- top_hits_df |> left_join(enriched, by = "song_id")
 ```
 
 ```{r, createtable}
@@ -103,9 +118,10 @@ generate_svg_circle <- function(popularity_value) {
 
 # Create the gt table with custom formatting
 top_hits_df |>
-  select(album_art, song_name, artist_name, track_duration, popularity, tempo) |>
+  select(position, album_art, song_name, artist_name, track_duration, popularity) |>
   gt(id = "custom") |>
   cols_label(
+    position = md("**#**"),
     album_art = md("**Song**"),
     song_name = "",
     artist_name = md("**Artist**"),
@@ -130,33 +146,17 @@ top_hits_df |>
       sprintf("%d:%02d", num_minutes, num_seconds)
     }
   ) |>
-  cols_nanoplot(
-    columns = tempo,
-    plot_type = "line",
-    new_col_name = "tempos",
-    new_col_label = md("**Tempo**"),
-    options = nanoplot_options(
-      data_point_fill_color = "#1DB954",
-      data_point_stroke_color = "#1DB954",
-      data_area_fill_color = "#1DB954",
-      data_line_stroke_color = "#7D3C98"
-    )
-  ) |>
   cols_align(
     align = "center",
-    columns = popularity
+    columns = c(position, popularity)
   ) |> 
   tab_footnote(
     footnote = "The popularity of a track is a value between 0 and 100, with 100 being the most popular. The popularity is calculated by algorithm and is based, in the most part, on the total number of plays the track has had and how recent those plays are.
 Generally speaking, songs that are being played a lot now will have a higher popularity than songs that were played a lot in the past.",
     locations = cells_column_labels(columns = popularity)
   ) |> 
-  tab_footnote(
-    footnote = "The tempo is measured in beats per minute and represents the speed at which the music is played. The visualization shows how the tempo varies across the different sections of the song. Sections with a higher tempo are generally more energetic and upbeat, while sections with a lower tempo may be more emotional or contemplative.",
-    locations = cells_column_labels(columns = tempos)
-  ) |> 
   tab_source_note(
-    source_note = md("**Source:** [Today's Top Hits Playlist](https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M), from the Spotify Web API")
+    source_note = md("**Source:** [kworb.net Spotify Global Daily Chart](https://kworb.net/spotify/country/global_daily.html), enriched with the Spotify Web API `/v1/tracks` endpoint.")
   ) |> 
   tab_options(
     table.font.color = "#FFFFFF",
@@ -202,13 +202,23 @@ Generally speaking, songs that are being played a lot now will have a higher pop
       top: -5px !important;
       z-index: 10 !important;
     }
+
+    /* Make every table row look clickable */
+    #custom .gt_table tbody tr {
+      cursor: pointer;
+    }
+
+    /* Highlight the currently-playing row */
+    #custom .gt_table tbody tr.now-playing {
+      background-color: #1DB954 !important;
+      color: #191414 !important;
+    }
+    #custom .gt_table tbody tr.now-playing a { color: #191414 !important; }
     "
   )
 ```
 
-## Column {width="65%"}
-
-### Row {height="10%"}
+## Column {width="45%"}
 
 ```{r, sendtoojs}
 #| echo: false
@@ -216,45 +226,77 @@ Generally speaking, songs that are being played a lot now will have a higher pop
 ojs_define(top_hits_ojs = top_hits_df)
 ```
 
+### Row {height="15%"}
+
 ```{ojs}
 //| expandable: false
 
-// Tranpose the data to  make it usable in ojs
+// Transpose the R data frame into an array of row objects usable in OJS
 top_hits = transpose(top_hits_ojs)
 
-// Create a dropdown menu of the songs
+// Reactive state: which row is currently selected.
+// Starts at position #1 and is updated by (a) clicking a table row or
+// (b) changing the dropdown.
+mutable selectedIndex = 0
+
+// Dropdown stays as a secondary way to jump to a song.
 viewof songDropdown = Inputs.select(
-  top_hits.map(d => d.song_name),
+  top_hits.map((d, i) => ({ label: `${d.position}. ${d.song_name} \u2014 ${d.artist_name}`, value: i })),
   {
-    label: "Choose a song",
-    unique: true
+    label: "Now playing",
+    format: o => o.label,
+    value: { label: `${top_hits[0].position}. ${top_hits[0].song_name} \u2014 ${top_hits[0].artist_name}`, value: 0 }
   }
 )
-```
 
-### Row {height="70%"}
+// Keep the dropdown in sync with whatever row is selected (click or dropdown).
+{
+  mutable selectedIndex = songDropdown.value;
+  return null;
+}
+
+// Attach row click handlers once the gt table is in the DOM.
+// We re-find rows on every run so OJS reactivity works after hot reloads.
+clickWiring = {
+  // Defer until after the gt table has been painted.
+  await new Promise(r => requestAnimationFrame(() => setTimeout(r, 50)));
+  const rows = Array.from(document.querySelectorAll("#custom .gt_table tbody tr"));
+  rows.forEach((tr, i) => {
+    tr.onclick = () => { mutable selectedIndex = i; };
+  });
+  return rows.length;
+}
+
+// Visually mark the currently-playing row.
+highlightRow = {
+  const rows = document.querySelectorAll("#custom .gt_table tbody tr");
+  rows.forEach(r => r.classList.remove("now-playing"));
+  if (rows[selectedIndex]) rows[selectedIndex].classList.add("now-playing");
+  return selectedIndex;
+}
+
+// Current track, derived.
+currentTrack = top_hits[selectedIndex]
+```
 
 ```{ojs}
 //| expandable: false
-html`<iframe class="custom-iframe" style="border-radius:12px; display: flex; justify-content: center; align-items: center;" 
-  src=${`https://open.spotify.com/embed/track/${top_hits.find(song => song.song_name === songDropdown).song_id}?utm_source=generator&theme=0`} 
-  width="100%" 
-  height="352" 
+html`<div style="padding: 6px 10px; color: #FFFFFF;">
+  <div style="font-size: 0.8rem; opacity: 0.7; letter-spacing: 0.08em; text-transform: uppercase;">Now playing · #${currentTrack.position}</div>
+  <div style="font-size: 1.05rem; font-weight: 600;">${currentTrack.song_name}</div>
+  <div style="font-size: 0.9rem; opacity: 0.85;">${currentTrack.artist_name}</div>
+</div>`
+```
+
+### Row {height="85%"}
+
+```{ojs}
+//| expandable: false
+html`<iframe class="custom-iframe" style="border-radius:12px; width: 100%; height: 100%; min-height: 420px; border: 0;" 
+  src=${`https://open.spotify.com/embed/track/${currentTrack.song_id}?utm_source=generator&theme=0`} 
   frameBorder="0" 
   allowfullscreen="" 
   allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
   loading="lazy">
 </iframe>`
 ```
-
-### Row {height="20%"}
-
-:::{.card expandable="false"}
-<div style="background-color: #7D3C98; color: white; border-radius: 10px; padding: 10px; text-align: center; display: flex; align-items: center; justify-content: center; height: 100%;">
-
-  <span style="font-size: 1vw; width: 100%;">
-    **Want to make a project like this?** This dashboard was created by [Melissa Van Bussel](https://www.melissavanbussel.com/) for [Posit's 2024 Table Contest](https://posit.co/blog/announcing-the-2024-table-contest/).<br> You can find a tutorial for this dashboard [here](https://melissavanbussel.github.io/spotify-dashboard) and you can find the code that powers this dashboard [here](https://github.com/melissavanbussel/spotify-dashboard).
-  </span>
-
-</div>
-:::

@@ -1,0 +1,11 @@
+# Copy this file to .Renviron and fill in your Spotify app credentials.
+# .Renviron is already in .gitignore so it will not be committed.
+#
+# Get your credentials from: https://developer.spotify.com/dashboard
+# (Click your app -> Settings -> Basic Information)
+#
+# NOTE: Your Spotify app must have been registered BEFORE Nov 27, 2024
+# for the `audio-analysis` endpoint and editorial playlist access used by
+# this dashboard to work. Apps registered after that date will get HTTP 403.
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=

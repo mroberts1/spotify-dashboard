@@ -3,6 +3,8 @@ on:
   push:
     branches: main
   schedule:
+    # Daily at 13:00 UTC. Rendering hits kworb.net + the Spotify /v1/tracks
+    # endpoint every run, so each render = latest Top 50.
     - cron: '0 13 * * *'
 
 name: Quarto Publish
@@ -22,12 +24,34 @@ jobs:
       - name: Install R
         uses: r-lib/actions/setup-r@v2
         with:
+          # Pinned to match renv.lock. Ubuntu ships pre-built binaries for
+          # this version via posit RSPM so installs stay fast.
           r-version: '4.2.0'
+
+      - name: Install system dependencies
+        # System libraries required by the R packages in renv.lock:
+        #   libxml2-dev   -> xml2 (used by rvest to parse kworb HTML)
+        #   libv8-dev     -> V8  (transitive via juicyjuice -> gt)
+        #   harfbuzz/fribidi/freetype -> textshaping / systemfonts (via gt)
+        #   libcurl/openssl           -> curl / httr2
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxml2-dev \
+            libv8-dev \
+            libharfbuzz-dev \
+            libfribidi-dev \
+            libfreetype6-dev \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            pkg-config
 
       - name: Install R Dependencies
         uses: r-lib/actions/setup-renv@v2
         with:
-          cache-version: 1
+          # Bump cache-version whenever renv.lock changes so the cached
+          # library is rebuilt.
+          cache-version: 2
 
       - name: Render and Publish
         uses: quarto-dev/quarto-actions/publish@v2
@@ -35,8 +59,8 @@ jobs:
           target: gh-pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MY_USERNAME: ${{ secrets.MY_USERNAME_GHA }}
-          MY_PASSWORD: ${{ secrets.MY_PASSWORD_GHA }}
-          # SPOTIFY_CLIENT_ID: ${{ secrets.MY_CLIENT_ID }}
-          # SPOTIFY_CLIENT_SECRET: ${{ secrets.MY_CLIENT_SECRET }}
-          
+          # Spotify Web API credentials. Add these as repository secrets at:
+          #   https://github.com/<owner>/<repo>/settings/secrets/actions
+          # using the exact names SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET.
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
