@@ -1,15 +1,5 @@
 [
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Posit 2024 Great Table Contest - Spotify Dashboard",
-    "section": "",
-    "text": "For Posit PBC’s Table Contest, I created an interactive Quarto dashboard that displays the “Today’s Top Hits” playlist from Spotify 🎵. The dashboard also includes an embedded Spotify web player, so you can hear the song directly in your browser! Although it’s got an interactive dropdown menu, it didn’t require a Shiny server – it’s all powered by Quarto + Observable JS + GitHub Actions + GitHub Pages. It updates itself automatically everyday at 9am, it was completely free to create and host, and it never needs to be run locally (unless you want to run it locally 😉). Below is a gif showing the dashboard’s functionality:\n\n🔗 You can check out the dashboard by clicking the “My entry” page in the sidebar, or by clicking here 🔗 And the full documentation and tutorials for it, by clicking the “Tutorial” page in the sidebar, or by clicking here\nI used the Table Contest as an excuse to teach myself some of the trickier concepts that have been on my “to learn” list for a while now. Specifically, I wanted to learn how to create interactive dashboards that didn’t rely on Shiny (I still ❤️ Shiny, but I also love automation and learning new things), how to make gt tables interactive using the cols_nanoplot function, and how to safely store passwords / API keys / etc. for my GitHub projects and do authentication as part of GitHub Actions workflows.\nI figured out the tricky bits, and I promise, it’s not nearly as complicated as it sounds! Over the next couple of weeks, I’ll be posting 6 videos on my YouTube channel, explaining how to build this dashboard step-by-step, from scratch. Each video in the series is completely self-contained, so you don’t need to watch the full playlist in order to follow along. Here are the topics I’ll cover, along with the day that each video in the playlist will be added 😊:\n\n🌐 Creating Quarto Dashboards and publishing them for FREE using GitHub Actions and GitHub Pages (Wednesday, May 22nd)\n🔒 How to securely store passwords as environment variables using GitHub Actions (Thursday, May 23rd)\n🎧 How to access Spotify data using R (Friday, May 24th)\n🖼️ Embedding media in Quarto projects using iframes (Tuesday, May 28th)\n🖱️ Creating interactive Quarto dashboards with Observable JS, GitHub Actions, and GitHub Pages (Wednesday, May 29th)\n🎨 Creating and styling a gt table, plus some Quarto styling in general (Thursday, May 30th)",
-    "crumbs": [
-      "Home"
-    ]
-  },
-  {
     "objectID": "tutorial.html",
     "href": "tutorial.html",
     "title": "Building an interactive Spotify dashboard",
@@ -17,6 +7,16 @@
     "text": "Tutorial 1: 🌐 Creating Quarto Dashboards and publishing them for FREE using GitHub Actions and GitHub Pages\n\n\n\n\nTutorial 2: 🔒 How to securely store passwords as environment variables using GitHub Actions\n\n\n\n\nTutorial 3: 🎵 How to access Spotify data using R\n\n\n\n\nTutorial 4: 🖼️ Embedding media in Quarto projects using iframes\n\n\n\n\nTutorial 5: 🖱️ Creating interactive Quarto dashboards with Observable JS, GitHub Actions, and GitHub Pages\n\n\n\n\nTutorial 6: 🎨 Creating and styling a gt table, plus some Quarto styling in general",
     "crumbs": [
       "Tutorial"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Posit 2024 Great Table Contest - Spotify Dashboard",
+    "section": "",
+    "text": "For Posit PBC’s Table Contest, I created an interactive Quarto dashboard that displays the “Today’s Top Hits” playlist from Spotify 🎵. The dashboard also includes an embedded Spotify web player, so you can hear the song directly in your browser! Although it’s got an interactive dropdown menu, it didn’t require a Shiny server – it’s all powered by Quarto + Observable JS + GitHub Actions + GitHub Pages. It updates itself automatically everyday at 9am, it was completely free to create and host, and it never needs to be run locally (unless you want to run it locally 😉). Below is a gif showing the dashboard’s functionality:\n\n🔗 You can check out the dashboard by clicking the “My entry” page in the sidebar, or by clicking here 🔗 And the full documentation and tutorials for it, by clicking the “Tutorial” page in the sidebar, or by clicking here\nI used the Table Contest as an excuse to teach myself some of the trickier concepts that have been on my “to learn” list for a while now. Specifically, I wanted to learn how to create interactive dashboards that didn’t rely on Shiny (I still ❤️ Shiny, but I also love automation and learning new things), how to make gt tables interactive using the cols_nanoplot function, and how to safely store passwords / API keys / etc. for my GitHub projects and do authentication as part of GitHub Actions workflows.\nI figured out the tricky bits, and I promise, it’s not nearly as complicated as it sounds! Over the next couple of weeks, I’ll be posting 6 videos on my YouTube channel, explaining how to build this dashboard step-by-step, from scratch. Each video in the series is completely self-contained, so you don’t need to watch the full playlist in order to follow along. Here are the topics I’ll cover, along with the day that each video in the playlist will be added 😊:\n\n🌐 Creating Quarto Dashboards and publishing them for FREE using GitHub Actions and GitHub Pages (Wednesday, May 22nd)\n🔒 How to securely store passwords as environment variables using GitHub Actions (Thursday, May 23rd)\n🎧 How to access Spotify data using R (Friday, May 24th)\n🖼️ Embedding media in Quarto projects using iframes (Tuesday, May 28th)\n🖱️ Creating interactive Quarto dashboards with Observable JS, GitHub Actions, and GitHub Pages (Wednesday, May 29th)\n🎨 Creating and styling a gt table, plus some Quarto styling in general (Thursday, May 30th)",
+    "crumbs": [
+      "Home"
     ]
   },
   {
