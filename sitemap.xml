@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://melissavanbussel.github.io/spotify-dashboard/about.html</loc>
-    <lastmod>2026-10-28T13:11:46.148Z</lastmod>
+    <loc>https://melissavanbussel.github.io/spotify-dashboard/index.html</loc>
+    <lastmod>2026-10-29T13:11:40.741Z</lastmod>
   </url>
   <url>
     <loc>https://melissavanbussel.github.io/spotify-dashboard/tutorial.html</loc>
-    <lastmod>2026-10-28T13:11:46.164Z</lastmod>
-  </url>
-  <url>
-    <loc>https://melissavanbussel.github.io/spotify-dashboard/index.html</loc>
-    <lastmod>2026-10-28T13:11:46.162Z</lastmod>
+    <lastmod>2026-10-29T13:11:40.743Z</lastmod>
   </url>
   <url>
     <loc>https://melissavanbussel.github.io/spotify-dashboard/dashboard.html</loc>
-    <lastmod>2026-10-28T13:11:46.148Z</lastmod>
+    <lastmod>2026-10-29T13:11:40.726Z</lastmod>
+  </url>
+  <url>
+    <loc>https://melissavanbussel.github.io/spotify-dashboard/about.html</loc>
+    <lastmod>2026-10-29T13:11:40.726Z</lastmod>
   </url>
 </urlset>
